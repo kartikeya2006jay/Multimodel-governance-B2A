@@ -1,0 +1,45 @@
+{
+  "tenant_id": "default",
+  "agents": [
+    {
+      "name": "finance",
+      "role": "finance",
+      "scopes": ["finance:read", "finance:write", "approve:purchase"],
+      "description": "Budget analysis and approval agent.",
+      "cost_per_call": 0.01,
+      "version": "1.0.0"
+    },
+    {
+      "name": "legal",
+      "role": "legal",
+      "scopes": ["legal:read", "legal:write", "compliance:read"],
+      "description": "Compliance review agent.",
+      "cost_per_call": 0.01,
+      "version": "1.0.0"
+    },
+    {
+      "name": "risk",
+      "role": "risk",
+      "scopes": ["risk:read", "risk:write", "risk:assess"],
+      "description": "Risk scoring and assessment agent.",
+      "cost_per_call": 0.01,
+      "version": "1.0.0"
+    },
+    {
+      "name": "devops",
+      "role": "devops",
+      "scopes": ["devops:read", "devops:write", "deploy:read"],
+      "description": "Deployment readiness validation agent.",
+      "cost_per_call": 0.01,
+      "version": "1.0.0"
+    },
+    {
+      "name": "llm",
+      "role": "llm",
+      "scopes": ["llm:call", "llm:read"],
+      "description": "Generic LLM orchestrator agent.",
+      "cost_per_call": 0.005,
+      "version": "1.0.0"
+    }
+  ]
+}
