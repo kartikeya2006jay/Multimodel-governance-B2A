@@ -73,14 +73,18 @@ class LLMAgent(BaseAgent):
             tenant_id = context.get("_tenant_id", "default")
             workflow_id = context.get("_workflow_id")
             if usage:
-                billing_engine.charge_llm_tokens(
-                    tenant_id=tenant_id,
-                    agent_name=self.name,
-                    prompt_tokens=usage.prompt_tokens,
-                    completion_tokens=usage.completion_tokens,
-                    model=model,
-                    workflow_id=workflow_id,
-                )
+                from app.models.base import AsyncSessionLocal
+                from app.services.billing_service import billing_service
+                async with AsyncSessionLocal() as db:
+                    await billing_service.charge_llm_tokens(
+                        db=db,
+                        tenant_id=tenant_id,
+                        agent_name=self.name,
+                        prompt_tokens=usage.prompt_tokens,
+                        completion_tokens=usage.completion_tokens,
+                        model=model,
+                        workflow_id=workflow_id,
+                    )
 
             return {
                 "llm_status": "completed",

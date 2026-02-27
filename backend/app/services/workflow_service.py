@@ -48,7 +48,9 @@ class WorkflowService:
         context["_workflow_id"] = wf.workflow_id
 
         # Reserve billing
-        reserve_id = billing_engine.reserve_workflow_cost(
+        from app.services.billing_service import billing_service
+        reserve_id = await billing_service.reserve_workflow_cost(
+            db=db,
             tenant_id=tenant_id,
             workflow_id=wf.workflow_id,
         )
@@ -75,10 +77,11 @@ class WorkflowService:
 
         # Commit or void billing reserve
         if wf.reserve_id:
+            from app.services.billing_service import billing_service
             if wf.status == WorkflowStatus.COMPLETED:
-                billing_engine.commit_reserve(wf.reserve_id)
+                await billing_service.commit_reserve(db, wf.reserve_id)
             else:
-                billing_engine.void_reserve(wf.reserve_id)
+                await billing_service.void_reserve(db, wf.reserve_id)
 
         # Persist final state
         from app.models.base import AsyncSessionLocal

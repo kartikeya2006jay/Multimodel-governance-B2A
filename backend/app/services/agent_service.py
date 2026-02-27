@@ -97,11 +97,14 @@ class AgentService:
         """Return agents registered in-memory (runtime registry)."""
         return [
             {
+                "id": f"runtime-{a.name}",
                 "name": a.name,
                 "role": a.role,
                 "scopes": a.scopes,
                 "description": a.description,
                 "version": a.version,
+                "cost_per_call": getattr(a, "cost_per_call", 0.01),
+                "is_active": True,
             }
             for a in agent_registry.list_all(tenant_id)
         ]

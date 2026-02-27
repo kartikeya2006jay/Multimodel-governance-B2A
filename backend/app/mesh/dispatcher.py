@@ -86,14 +86,18 @@ class AgentDispatcher:
             raise PolicyDeniedError(policy_result.reason)
 
         # ── 2. Billing: charge per agent call ─────────────────────
-        ledger_entry = billing_engine.charge_agent_call(
-            tenant_id=tenant_id,
-            agent_name=agent_name,
-            workflow_id=workflow_id,
-            cost_override=getattr(agent, "cost_per_call", None),
-        )
-        record_billing_charge(tenant_id, float(ledger_entry.amount))
-        workflow.total_cost += float(ledger_entry.amount)
+        from app.models.base import AsyncSessionLocal
+        from app.services.billing_service import billing_service
+        async with AsyncSessionLocal() as db:
+            billed = await billing_service.charge_agent_call(
+                db=db,
+                tenant_id=tenant_id,
+                agent_name=agent_name,
+                workflow_id=workflow_id,
+                cost_override=getattr(agent, "cost_per_call", None),
+            )
+            record_billing_charge(tenant_id, float(billed["amount"]))
+            workflow.total_cost += float(billed["amount"])
 
         # ── 3. Pre-execution Audit ────────────────────────────────
         chain = audit_chain_registry.get_or_create(tenant_id)

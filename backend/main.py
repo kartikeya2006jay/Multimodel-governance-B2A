@@ -21,6 +21,10 @@ async def lifespan(application: FastAPI):
     """Startup and shutdown logic."""
     await init_db()         # initialise tables
     init_metrics()          # start Prometheus metrics server
+    
+    from app.agents.registry import register_all_agents
+    register_all_agents()   # register default mesh agents
+    
     yield
     # teardown (add cleanup here as needed)
 
@@ -36,7 +40,17 @@ def create_application() -> FastAPI:
         redoc_url="/redoc",
         openapi_url="/openapi.json",
         lifespan=lifespan,
+        swagger_ui_parameters={"deepLinking": True}
     )
+
+    # Simplified Operation IDs to avoid Swagger UI underscore warnings
+    from fastapi.routing import APIRoute
+    def simplify_operation_ids(app: FastAPI) -> None:
+        for route in app.routes:
+            if isinstance(route, APIRoute):
+                route.operation_id = route.name.replace("_", "-")
+
+    simplify_operation_ids(application)
 
     # CORS
     application.add_middleware(

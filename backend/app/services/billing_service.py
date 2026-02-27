@@ -14,7 +14,6 @@ from app.models.ledger import LedgerRecord
 
 
 class BillingService:
-
     async def get_balance(self, tenant_id: str) -> dict:
         balance = billing_engine.get_balance(tenant_id)
         return {
@@ -78,6 +77,74 @@ class BillingService:
             "forecast_spend": forecast,
             "status": "healthy" if actual_spend < budget else "over_budget"
         }
+
+    async def charge_agent_call(
+        self,
+        db: AsyncSession,
+        tenant_id: str,
+        agent_name: str,
+        workflow_id: Optional[str] = None,
+        cost_override: Optional[float] = None,
+    ) -> dict:
+        entry = billing_engine.charge_agent_call(
+            tenant_id=tenant_id,
+            agent_name=agent_name,
+            workflow_id=workflow_id,
+            cost_override=cost_override,
+        )
+        record = await self.persist_entry(db, entry)
+        return record.to_dict()
+
+    async def charge_llm_tokens(
+        self,
+        db: AsyncSession,
+        tenant_id: str,
+        agent_name: str,
+        prompt_tokens: int,
+        completion_tokens: int,
+        model: str,
+        workflow_id: Optional[str] = None,
+        cost_per_1k_override: Optional[float] = None,
+    ) -> dict:
+        entry = billing_engine.charge_llm_tokens(
+            tenant_id=tenant_id,
+            agent_name=agent_name,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            model=model,
+            workflow_id=workflow_id,
+            cost_per_1k_override=cost_per_1k_override,
+        )
+        record = await self.persist_entry(db, entry)
+        return record.to_dict()
+
+    async def reserve_workflow_cost(
+        self,
+        db: AsyncSession,
+        tenant_id: str,
+        workflow_id: str,
+        estimated_cost: Optional[float] = None,
+    ) -> str:
+        reserve_id = billing_engine.reserve_workflow_cost(
+            tenant_id=tenant_id,
+            workflow_id=workflow_id,
+            estimated_cost=estimated_cost,
+        )
+        # Find the entry in engine to persist it
+        entry = billing_engine._reserves.get(reserve_id)
+        if entry:
+            await self.persist_entry(db, entry)
+        return reserve_id
+
+    async def commit_reserve(self, db: AsyncSession, reserve_id: str) -> None:
+        entry = billing_engine.commit_reserve(reserve_id)
+        if entry:
+            await self.persist_entry(db, entry)
+
+    async def void_reserve(self, db: AsyncSession, reserve_id: str) -> None:
+        entry = billing_engine.void_reserve(reserve_id)
+        if entry:
+            await self.persist_entry(db, entry)
 
     async def persist_entry(
         self, db: AsyncSession, entry
